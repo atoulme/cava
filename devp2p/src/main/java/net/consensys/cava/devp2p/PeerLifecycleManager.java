@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.logl.Logger;
 
 /**
  * Manages the actions reported by the network and the changes to the peer repository.
@@ -36,6 +37,7 @@ final class PeerLifecycleManager {
   private static final long EXPIRATION_PERIOD_MS = 3000;
   private static final int MAX_NUMBER_OF_NEIGHBORS = 5;
 
+  private final Logger logger;
   private final ExpiringMap<Bytes, Bytes> awaitingPongs = new ExpiringMap<>();
   private final PeerRepository peerRepository;
   private final LongSupplier currentTimeSupplier;
@@ -51,6 +53,7 @@ final class PeerLifecycleManager {
       BiConsumer<Endpoint, Packet> packetSender,
       Endpoint endpoint,
       PeerRoutingTable peerRoutingTable,
+      Logger logger,
       LongSupplier currentTimeSupplier) {
     checkArgument(peerRepository != null);
     checkArgument(bootstrapPeers != null);
@@ -58,12 +61,14 @@ final class PeerLifecycleManager {
     checkArgument(peerRoutingTable != null);
     checkArgument(currentTimeSupplier != null);
     checkArgument(packetSender != null);
+    checkArgument(logger != null);
     this.currentTimeSupplier = currentTimeSupplier;
     this.keyPair = keyPair;
     this.packetSender = packetSender;
     this.endpoint = endpoint;
     this.peerRepository = peerRepository;
     this.peerRoutingTable = peerRoutingTable;
+    this.logger = logger;
     peerRepository.observePeerActive(this::peerActive);
     peerRepository.observePeerAddition(this::peerAddition);
     for (String peer : bootstrapPeers) {
@@ -72,6 +77,7 @@ final class PeerLifecycleManager {
   }
 
   private void peerActive(Peer peer) {
+    logger.debug("Peer active {}", peer);
     long now = currentTimeSupplier.getAsLong();
     Endpoint to = peer.endpoint();
     FindNeighborsPacket findNeighbors = Packet.createFindNeighbors(peer.nodeId(), now + EXPIRATION_PERIOD_MS, keyPair);
@@ -82,6 +88,7 @@ final class PeerLifecycleManager {
     if (peer.endpoint() == null || peer.endpoint().equals(endpoint)) {
       return;
     }
+    logger.debug("Peer added {}", peer);
     long now = currentTimeSupplier.getAsLong();
     Endpoint to = peer.endpoint();
     peerRoutingTable.add(peer);
@@ -103,6 +110,8 @@ final class PeerLifecycleManager {
           now + EXPIRATION_PERIOD_MS,
           keyPair);
       packetSender.accept(peer.endpoint(), neighborsPacket);
+    } else {
+      logger.debug("Ignore FindNeighbors packet as peer is not active, {}", peer);
     }
   }
 
@@ -139,12 +148,15 @@ final class PeerLifecycleManager {
           peer.setActive(peer.endpoint());
         }
       }
+    } else {
+      logger.debug("Ignore packet, ping hash does not match");
     }
   }
 
   void receivePacket(Bytes data) {
     PacketHeader header = PacketHeader.decode(data);
     Bytes payloadBytes = data.slice(98);
+    logger.info("Receive packet of type {}", header.packetType());
 
     switch (header.packetType()) {
       case 0x01:

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.logl.Logger;
 
 @ExtendWith(BouncyCastleExtension.class)
 class PeerLifecycleManagerTest {
@@ -47,6 +48,7 @@ class PeerLifecycleManagerTest {
             }),
             new Endpoint("127.0.0.1", 1234, 12345),
             new SimplePeerRoutingTable(),
+            Logger.nullProvider(),
             System::currentTimeMillis));
   }
 
@@ -55,7 +57,11 @@ class PeerLifecycleManagerTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> new PeerLifecycleManager(new PeerRepository(), null, KeyPair.random(), ((endpoint, packet) -> {
-        }), new Endpoint("127.0.0.1", 1234, 12345), new SimplePeerRoutingTable(), System::currentTimeMillis));
+        }),
+            new Endpoint("127.0.0.1", 1234, 12345),
+            new SimplePeerRoutingTable(),
+            Logger.nullProvider(),
+            System::currentTimeMillis));
   }
 
   @Test
@@ -69,6 +75,7 @@ class PeerLifecycleManagerTest {
           }),
           new Endpoint("127.0.0.1", 1234, 12345),
           new SimplePeerRoutingTable(),
+          Logger.nullProvider(),
           System::currentTimeMillis);
     });
   }
@@ -84,6 +91,7 @@ class PeerLifecycleManagerTest {
             null,
             new Endpoint("127.0.0.1", 1234, 12345),
             new SimplePeerRoutingTable(),
+            Logger.nullProvider(),
             System::currentTimeMillis));
   }
 
@@ -99,6 +107,7 @@ class PeerLifecycleManagerTest {
             }),
             null,
             new SimplePeerRoutingTable(),
+            Logger.nullProvider(),
             System::currentTimeMillis));
   }
 
@@ -114,6 +123,7 @@ class PeerLifecycleManagerTest {
             }),
             new Endpoint("127.0.0.1", 1234, 12345),
             null,
+            Logger.nullProvider(),
             System::currentTimeMillis));
   }
 
@@ -129,6 +139,7 @@ class PeerLifecycleManagerTest {
             }),
             new Endpoint("127.0.0.1", 1234, 12345),
             new SimplePeerRoutingTable(),
+            Logger.nullProvider(),
             null));
   }
 
@@ -151,6 +162,7 @@ class PeerLifecycleManagerTest {
         this::capturePacket,
         from,
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     Endpoint to = new Endpoint("192.168.1.10", 30303, 30303);
     assertEquals(this.capturedEndpoint, to);
@@ -174,6 +186,7 @@ class PeerLifecycleManagerTest {
         this::capturePacket,
         from,
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
 
     assertEquals((byte) 0x01, capturedPacket.header().packetType());
@@ -205,6 +218,7 @@ class PeerLifecycleManagerTest {
         this::capturePacket,
         from,
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     repository.observePeerActive(activatedPeer::set);
     PongPacket unsolicitedPong = Packet.createPong(from, Bytes.EMPTY, now + 25, KeyPair.random());
@@ -224,6 +238,7 @@ class PeerLifecycleManagerTest {
         this::capturePacket,
         from,
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     AtomicReference<Peer> addedPeer = new AtomicReference<>();
     repository.observePeerAddition(addedPeer::set);
@@ -246,6 +261,7 @@ class PeerLifecycleManagerTest {
         this::capturePacket,
         from,
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     AtomicReference<Peer> addedPeer = new AtomicReference<>();
     repository.observePeerAddition(addedPeer::set);
@@ -321,6 +337,7 @@ class PeerLifecycleManagerTest {
         ipc::sendToB,
         new Endpoint("127.0.0.1", 1234, 12345),
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     PeerLifecycleManager serviceB = new PeerLifecycleManager(
         repositoryB,
@@ -329,6 +346,7 @@ class PeerLifecycleManagerTest {
         ipc::sendToA,
         new Endpoint("127.0.0.1", 1236, 12346),
         new SimplePeerRoutingTable(),
+        Logger.nullProvider(),
         () -> now);
     assertEquals(1, ipc.toA().size(), ipc.toA().toString());
     assertEquals(1, ipc.toB().size(), ipc.toB().toString());
