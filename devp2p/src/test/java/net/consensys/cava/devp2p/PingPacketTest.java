@@ -16,11 +16,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.crypto.SECP256K1.KeyPair;
+import net.consensys.cava.junit.BouncyCastleExtension;
 import net.consensys.cava.rlp.RLP;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BouncyCastleExtension.class)
 class PingPacketTest {
 
   private Endpoint to = new Endpoint("127.0.0.1", 7654, 8765);;
@@ -28,8 +32,10 @@ class PingPacketTest {
 
   @Test
   void testToBytesAndBack() {
-    PingPacket payload = new PingPacket(20L, null, from, to);
-    PingPacket read = PingPacket.decode(payload.createPayloadBytes());
+    KeyPair keyPair = KeyPair.random();
+    PingPacket payload = new PingPacket(20L, keyPair, from, to);
+    PingPacket read =
+        PingPacket.decode(payload.payloadBytes(), new PacketHeader(keyPair, (byte) 0x01, payload.payloadBytes()));
     assertEquals(payload, read);
   }
 
@@ -41,8 +47,10 @@ class PingPacketTest {
 
   @Test
   void invalidVersion() {
+    KeyPair keyPair = KeyPair.random();
     assertThrows(PeerDiscoveryPacketDecodingException.class, () -> {
-      PingPacket.decode(RLP.encodeList(writer -> writer.writeInt(3)));
+      PingPacket
+          .decode(RLP.encodeList(writer -> writer.writeInt(3)), new PacketHeader(keyPair, (byte) 0x01, Bytes.EMPTY));
     });
   }
 

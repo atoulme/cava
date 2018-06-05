@@ -42,17 +42,13 @@ abstract class Packet {
   private final long expiration;
   private Bytes cachedBytes;
 
-  Packet(long expiration) {
-    this.expiration = expiration;
-  }
-
   long expiration() {
     return expiration;
   }
 
-  abstract Bytes createPayloadBytes();
+  protected abstract Bytes createPayloadBytes();
 
-  private Bytes payloadBytes() {
+  Bytes payloadBytes() {
     if (cachedBytes == null) {
       cachedBytes = createPayloadBytes();
     }
@@ -62,6 +58,11 @@ abstract class Packet {
   Packet(long expiration, KeyPair keyPair) {
     this.expiration = expiration;
     this.keyPair = keyPair;
+  }
+
+  Packet(long expiration, PacketHeader packetHeader) {
+    this.expiration = expiration;
+    this.header = packetHeader;
   }
 
   PacketHeader header() {

@@ -15,6 +15,7 @@ package net.consensys.cava.devp2p;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.crypto.SECP256K1.KeyPair;
 import net.consensys.cava.devp2p.NeighborsPacket.Neighbor;
 import net.consensys.cava.junit.BouncyCastleExtension;
 
@@ -30,9 +31,11 @@ class NeighborsPacketTest {
 
   @Test
   void testToBytesAndBack() {
+    KeyPair keyPair = KeyPair.random();
     NeighborsPacket payload =
-        new NeighborsPacket(20L, null, Collections.singletonList(new Neighbor(Bytes.of(1, 2, 3), from)));
-    NeighborsPacket read = NeighborsPacket.decode(payload.createPayloadBytes());
+        new NeighborsPacket(20L, keyPair, Collections.singletonList(new Neighbor(Bytes.of(1, 2, 3), from)));
+    NeighborsPacket read =
+        NeighborsPacket.decode(payload.payloadBytes(), new PacketHeader(keyPair, (byte) 0x04, payload.payloadBytes()));
     assertEquals(payload, read);
   }
 }

@@ -22,7 +22,7 @@ final class PingPacket extends Packet {
 
   private static final int VERSION = 4;
 
-  static PingPacket decode(Bytes payloadBytes) {
+  static PingPacket decode(Bytes payloadBytes, PacketHeader packetHeader) {
     return RLP.decodeList(payloadBytes, (listReader) -> {
       int version = listReader.readInt();
       if (version != VERSION) {
@@ -32,7 +32,7 @@ final class PingPacket extends Packet {
       Endpoint from = listReader.readList(Endpoint::read);
       Endpoint to = listReader.readList(Endpoint::read);
       long expiration = listReader.readLong();
-      return new PingPacket(expiration, null, from, to);
+      return new PingPacket(expiration, packetHeader, from, to);
     });
   }
 
@@ -45,8 +45,14 @@ final class PingPacket extends Packet {
     this.to = to;
   }
 
+  private PingPacket(long expiration, PacketHeader header, Endpoint from, Endpoint to) {
+    super(expiration, header);
+    this.from = from;
+    this.to = to;
+  }
+
   @Override
-  public Bytes createPayloadBytes() {
+  protected Bytes createPayloadBytes() {
     return RLP.encodeList(listWriter -> {
       listWriter.writeInt(VERSION);
       listWriter.writeList(from::writeTo);
@@ -55,11 +61,11 @@ final class PingPacket extends Packet {
     });
   }
 
-  public Endpoint from() {
+  Endpoint from() {
     return from;
   }
 
-  public Endpoint to() {
+  Endpoint to() {
     return to;
   }
 

@@ -38,7 +38,7 @@ class PacketTest {
   void createPacketAndReadItBack() {
     FindNeighborsPacket packet = new FindNeighborsPacket(20, KeyPair.random(), Bytes.of(3));
     Bytes encoded = packet.toBytes();
-    FindNeighborsPacket readPacket = FindNeighborsPacket.decode(encoded.slice(98));
+    FindNeighborsPacket readPacket = FindNeighborsPacket.decode(encoded.slice(98), PacketHeader.decode(encoded));
     assertEquals(readPacket, packet);
   }
 

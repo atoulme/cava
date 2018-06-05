@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 final class NeighborsPacket extends Packet {
-  static NeighborsPacket decode(Bytes payloadBytes) {
+  static NeighborsPacket decode(Bytes payloadBytes, PacketHeader packetHeader) {
     return RLP.decodeList(payloadBytes, reader -> {
 
       List<Neighbor> neighbors = reader.readList((neighborsReader) -> {
@@ -40,7 +40,7 @@ final class NeighborsPacket extends Packet {
       });
 
       long expiration = reader.readLong();
-      return new NeighborsPacket(expiration, null, neighbors);
+      return new NeighborsPacket(expiration, packetHeader, neighbors);
     });
   }
 
@@ -51,12 +51,17 @@ final class NeighborsPacket extends Packet {
     this.neighbors = neighbors;
   }
 
-  public List<Neighbor> neighbors() {
+  private NeighborsPacket(long expiration, PacketHeader packetHeader, List<Neighbor> neighbors) {
+    super(expiration, packetHeader);
+    this.neighbors = neighbors;
+  }
+
+  List<Neighbor> neighbors() {
     return neighbors;
   }
 
   @Override
-  public Bytes createPayloadBytes() {
+  protected Bytes createPayloadBytes() {
     return RLP.encodeList(rlpWriter -> {
       rlpWriter.writeList(neighborsWriter -> neighbors.forEach(neighbor -> neighborsWriter.writeList(neighborWriter -> {
         neighbor.endpoint().writeTo(neighborWriter);

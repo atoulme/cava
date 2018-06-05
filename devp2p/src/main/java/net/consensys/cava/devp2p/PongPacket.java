@@ -20,12 +20,12 @@ import com.google.common.base.Objects;
 
 final class PongPacket extends Packet {
 
-  static PongPacket decode(Bytes payloadBytes) {
+  static PongPacket decode(Bytes payloadBytes, PacketHeader packetHeader) {
     return RLP.decodeList(payloadBytes, (listReader) -> {
       Endpoint to = Endpoint.readFrom(listReader);
       Bytes pingHash = listReader.readValue();
       long expiration = listReader.readLong();
-      return new PongPacket(expiration, null, to, pingHash);
+      return new PongPacket(expiration, packetHeader, to, pingHash);
     });
   }
 
@@ -38,11 +38,17 @@ final class PongPacket extends Packet {
     this.pingHash = pingHash;
   }
 
-  public Bytes pingHash() {
+  PongPacket(long expiration, PacketHeader packetHeader, Endpoint to, Bytes pingHash) {
+    super(expiration, packetHeader);
+    this.to = to;
+    this.pingHash = pingHash;
+  }
+
+  Bytes pingHash() {
     return pingHash;
   }
 
-  public Endpoint to() {
+  Endpoint to() {
     return to;
   }
 

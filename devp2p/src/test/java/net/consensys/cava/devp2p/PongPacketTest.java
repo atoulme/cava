@@ -29,8 +29,10 @@ class PongPacketTest {
 
   @Test
   void testToBytesAndBack() {
-    PongPacket payload = new PongPacket(20L, KeyPair.random(), to, Bytes.of(1, 2, 3));
-    PongPacket read = PongPacket.decode(payload.createPayloadBytes());
+    KeyPair keyPair = KeyPair.random();
+    PongPacket payload = new PongPacket(20L, keyPair, to, Bytes.of(1, 2, 3));
+    PongPacket read =
+        PongPacket.decode(payload.createPayloadBytes(), new PacketHeader(keyPair, (byte) 0x02, payload.payloadBytes()));
     assertEquals(payload, read);
   }
 

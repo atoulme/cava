@@ -20,11 +20,11 @@ import com.google.common.base.Objects;
 
 final class FindNeighborsPacket extends Packet {
 
-  static FindNeighborsPacket decode(Bytes payloadBytes) {
+  static FindNeighborsPacket decode(Bytes payloadBytes, PacketHeader packetHeader) {
     return RLP.decodeList(payloadBytes, (listReader) -> {
       Bytes target = listReader.readValue();
       long expiration = listReader.readLong();
-      return new FindNeighborsPacket(expiration, null, target);
+      return new FindNeighborsPacket(expiration, packetHeader, target);
     });
   }
 
@@ -35,12 +35,17 @@ final class FindNeighborsPacket extends Packet {
     this.target = target;
   }
 
-  public Bytes target() {
+  private FindNeighborsPacket(long expiration, PacketHeader packetHeader, Bytes target) {
+    super(expiration, packetHeader);
+    this.target = target;
+  }
+
+  Bytes target() {
     return target;
   }
 
   @Override
-  public Bytes createPayloadBytes() {
+  protected Bytes createPayloadBytes() {
     return RLP.encodeList(writer -> {
       writer.writeValue(target);
       writer.writeLong(expiration());
