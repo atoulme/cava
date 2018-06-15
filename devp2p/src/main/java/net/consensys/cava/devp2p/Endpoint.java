@@ -18,9 +18,12 @@ import com.google.common.net.InetAddresses;
  */
 public final class Endpoint {
 
+  /**
+   * The default port used by Ethereum DevP2P.
+   */
   public static final int DEFAULT_PORT = 30303;
 
-  private final String host;
+  private final String address;
   private final int udpPort;
   private final int tcpPort;
 
@@ -39,19 +42,34 @@ public final class Endpoint {
     checkArgument(udpPort > 0 && udpPort < 65536, "UDP port requires a value between 1 and 65535, got " + udpPort);
     checkArgument(tcpPort > 0 && tcpPort < 65536, "TCP port requires a value between 1 and 65535, got " + tcpPort);
 
-    this.host = address;
+    this.address = address;
     this.udpPort = udpPort;
     this.tcpPort = tcpPort;
   }
 
-  public String host() {
-    return host;
+  /**
+   * The IP address for this endpoint.
+   *
+   * @return An IP address.
+   */
+  public String address() {
+    return address;
   }
 
+  /**
+   * The UDP port for this endpoint.
+   *
+   * @return The UDP port number.
+   */
   public int udpPort() {
     return udpPort;
   }
 
+  /**
+   * The TCP port for this endpoint.
+   *
+   * @return The TCP port number.
+   */
   public int tcpPort() {
     return tcpPort;
   }
@@ -68,26 +86,26 @@ public final class Endpoint {
       return false;
     }
     Endpoint other = (Endpoint) obj;
-    return host.equals(other.host) && (this.udpPort == other.udpPort) && (this.tcpPort == other.tcpPort);
+    return address.equals(other.address) && (this.udpPort == other.udpPort) && (this.tcpPort == other.tcpPort);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, udpPort, tcpPort);
+    return Objects.hash(address, udpPort, tcpPort);
   }
 
   @Override
   public String toString() {
-    return "Endpoint{" + "host='" + host + '\'' + ", udpPort=" + udpPort + ", tcpPort=" + tcpPort + '}';
+    return "Endpoint{" + "address='" + address + '\'' + ", udpPort=" + udpPort + ", tcpPort=" + tcpPort + '}';
   }
 
   /**
    * Write this endpoint as an RLP list item.
-   * 
+   *
    * @return the result of the RLP encoding as {@link Bytes}
    */
   public Bytes toBytes() {
-    return RLP.encodeList(this::write);
+    return RLP.encodeList(this::writeTo);
 
   }
 
@@ -96,8 +114,8 @@ public final class Endpoint {
    *
    * @param writer The RLP writer.
    */
-  void write(RLPWriter writer) {
-    writer.writeValue(Bytes.of(InetAddresses.forString(host).getAddress()));
+  void writeTo(RLPWriter writer) {
+    writer.writeValue(Bytes.of(InetAddresses.forString(address).getAddress()));
     writer.writeInt(udpPort);
     writer.writeInt(tcpPort);
   }
@@ -132,6 +150,9 @@ public final class Endpoint {
     int tcpPort = udpPort;
     if (!reader.isComplete()) {
       tcpPort = reader.readInt();
+      if (tcpPort == 0) {
+        tcpPort = udpPort;
+      }
     }
 
     return new Endpoint(addr.getHostAddress(), udpPort, tcpPort);

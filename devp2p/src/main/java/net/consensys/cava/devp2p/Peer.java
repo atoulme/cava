@@ -4,8 +4,8 @@ import net.consensys.cava.bytes.Bytes;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * An Ethereum P2P network peer.
@@ -20,7 +20,8 @@ public interface Peer {
   /**
    * @return The endpoint for this peer, if known.
    */
-  Optional<Endpoint> endpoint();
+  @Nullable
+  Endpoint endpoint();
 
   /**
    * @return The set of capabilities this peer current has.
@@ -48,7 +49,8 @@ public interface Peer {
   /**
    * @return The point-in-time when this peer was last seen.
    */
-  Optional<Instant> lastSeen();
+  @Nullable
+  Instant lastSeen();
 
   /**
    * Set this peer to active state, with the given endpoint.

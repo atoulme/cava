@@ -3,6 +3,8 @@ package net.consensys.cava.devp2p;
 import static net.consensys.cava.bytes.Bytes.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,19 +13,16 @@ import net.consensys.cava.bytes.Bytes;
 
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class PeerRepositoryTest {
 
-  private Supplier<Instant> currentTimeSupplier;
   private PeerRepository peerRepository;
 
   private Instant now = Instant.now();
@@ -31,15 +30,14 @@ class PeerRepositoryTest {
   @SuppressWarnings("unchecked")
   @BeforeEach
   void setup() {
-    currentTimeSupplier = () -> now;
-    peerRepository = new PeerRepository(currentTimeSupplier);
+    peerRepository = new PeerRepository(() -> now);
   }
 
   @Test
   void shouldReturnInactivePeerWithNoEndpointForUnknownId() {
     Peer peer = peerRepository.get(Bytes.of(1, 2, 3));
     assertFalse(peer.isActive());
-    assertFalse(peer.endpoint().isPresent());
+    assertNull(peer.endpoint());
   }
 
   @Test
@@ -47,8 +45,8 @@ class PeerRepositoryTest {
     Endpoint endpoint = new Endpoint("127.0.0.1", 30303, 30303);
     Peer peer = peerRepository.get(Bytes.of(1, 2, 3), endpoint);
     assertFalse(peer.isActive());
-    assertTrue(peer.endpoint().isPresent());
-    assertEquals(endpoint, peer.endpoint().get());
+    assertNotNull(peer.endpoint());
+    assertEquals(endpoint, peer.endpoint());
   }
 
   @Test
@@ -56,15 +54,15 @@ class PeerRepositoryTest {
     Peer peer = peerRepository.get(
         "enode://c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b@172.20.0.4:7654");
     assertFalse(peer.isActive());
-    assertTrue(peer.endpoint().isPresent());
-
     assertEquals(
         fromHexString(
             "c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b"),
         peer.nodeId());
-    assertEquals("172.20.0.4", peer.endpoint().get().host());
-    assertEquals(7654, peer.endpoint().get().udpPort());
-    assertEquals(7654, peer.endpoint().get().tcpPort());
+    Endpoint endpoint = peer.endpoint();
+    assertNotNull(endpoint);
+    assertEquals("172.20.0.4", endpoint.address());
+    assertEquals(7654, endpoint.udpPort());
+    assertEquals(7654, endpoint.tcpPort());
   }
 
   @Test
@@ -72,15 +70,15 @@ class PeerRepositoryTest {
     Peer peer = peerRepository.get(
         "enode://c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b@172.20.0.4");
     assertFalse(peer.isActive());
-    assertTrue(peer.endpoint().isPresent());
-
     assertEquals(
         fromHexString(
             "c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b"),
         peer.nodeId());
-    assertEquals("172.20.0.4", peer.endpoint().get().host());
-    assertEquals(30303, peer.endpoint().get().udpPort());
-    assertEquals(30303, peer.endpoint().get().tcpPort());
+    Endpoint endpoint = peer.endpoint();
+    assertNotNull(endpoint);
+    assertEquals("172.20.0.4", endpoint.address());
+    assertEquals(30303, endpoint.udpPort());
+    assertEquals(30303, endpoint.tcpPort());
   }
 
   @Test
@@ -88,15 +86,15 @@ class PeerRepositoryTest {
     Peer peer = peerRepository.get(
         "enode://c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b@172.20.0.4:54789?discport=23456");
     assertFalse(peer.isActive());
-    assertTrue(peer.endpoint().isPresent());
-
     assertEquals(
         fromHexString(
             "c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b"),
         peer.nodeId());
-    assertEquals("172.20.0.4", peer.endpoint().get().host());
-    assertEquals(23456, peer.endpoint().get().udpPort());
-    assertEquals(54789, peer.endpoint().get().tcpPort());
+    Endpoint endpoint = peer.endpoint();
+    assertNotNull(endpoint);
+    assertEquals("172.20.0.4", endpoint.address());
+    assertEquals(23456, endpoint.udpPort());
+    assertEquals(54789, endpoint.tcpPort());
   }
 
   @Test
@@ -143,15 +141,15 @@ class PeerRepositoryTest {
     Peer peer = peerRepository.get(
         "enode://c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b@172.20.0.4:54789?foo=bar&discport=23456&bar=foo");
     assertFalse(peer.isActive());
-    assertTrue(peer.endpoint().isPresent());
-
     assertEquals(
         fromHexString(
             "c7849b663d12a2b5bf05b1ebf5810364f4870d5f1053fbd7500d38bc54c705b453d7511ca8a4a86003d34d4c8ee0bbfcd387aa724f5b240b3ab4bbb994a1e09b"),
         peer.nodeId());
-    assertEquals("172.20.0.4", peer.endpoint().get().host());
-    assertEquals(23456, peer.endpoint().get().udpPort());
-    assertEquals(54789, peer.endpoint().get().tcpPort());
+    Endpoint endpoint = peer.endpoint();
+    assertNotNull(endpoint);
+    assertEquals("172.20.0.4", endpoint.address());
+    assertEquals(23456, endpoint.udpPort());
+    assertEquals(54789, endpoint.tcpPort());
   }
 
   @Test
@@ -161,8 +159,8 @@ class PeerRepositoryTest {
     Endpoint endpoint = new Endpoint("127.0.0.1", 30303, 30303);
     Peer peer2 = peerRepository.get(nodeId, endpoint);
     assertSame(peer2, peer1);
-    assertTrue(peer1.endpoint().isPresent());
-    assertEquals(endpoint, peer1.endpoint().get());
+    assertNotNull(peer1.endpoint());
+    assertEquals(endpoint, peer1.endpoint());
   }
 
   @Test
@@ -173,8 +171,8 @@ class PeerRepositoryTest {
     Endpoint endpoint2 = new Endpoint("127.0.0.2", 30304, 30304);
     Peer peer2 = peerRepository.get(Bytes.of(1, 2, 3), endpoint2);
     assertSame(peer2, peer1);
-    assertTrue(peer1.endpoint().isPresent());
-    assertEquals(endpoint1, peer1.endpoint().get());
+    assertNotNull(peer1.endpoint());
+    assertEquals(endpoint1, peer1.endpoint());
   }
 
   @Test
@@ -184,8 +182,8 @@ class PeerRepositoryTest {
     peer.setActive(endpoint1);
     Endpoint endpoint2 = new Endpoint("127.0.0.2", 30304, 30304);
     peer.setActive(endpoint2);
-    assertTrue(peer.endpoint().isPresent());
-    assertEquals(endpoint1, peer.endpoint().get());
+    assertNotNull(peer.endpoint());
+    assertEquals(endpoint1, peer.endpoint());
   }
 
   @Test
@@ -236,7 +234,7 @@ class PeerRepositoryTest {
     peer.setActive(endpoint);
 
     assertTrue(peer.isActive());
-    assertEquals(null, notifiedPeer.get());
+    assertNull(notifiedPeer.get());
 
     peer.setInactive();
     assertFalse(peer.isActive());
@@ -260,7 +258,7 @@ class PeerRepositoryTest {
     peer.setActive(endpoint);
 
     assertTrue(peer.isActive());
-    assertEquals(null, notifiedPeer.get());
+    assertNull(notifiedPeer.get());
 
     peer.setCapabilities(Collections.singletonList("eth"));
     assertTrue(peer.hasCapability("eth"));
@@ -304,6 +302,6 @@ class PeerRepositoryTest {
     peer.setActive(endpoint);
     peer.updateLastSeen();
 
-    assertEquals(Optional.of(now), peer.lastSeen());
+    assertEquals(now, peer.lastSeen());
   }
 }

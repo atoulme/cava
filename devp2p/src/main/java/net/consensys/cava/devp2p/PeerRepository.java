@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -19,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * A repository of all Peers in an Ethereum network.
@@ -221,19 +221,15 @@ public final class PeerRepository {
 
     private final Bytes nodeId;
     private boolean active;
-    private Optional<Endpoint> endpoint;
+    private Endpoint endpoint;
     private Set<String> capabilities = Collections.emptySet();
-    private Optional<Instant> lastSeen = Optional.empty();
+    private Instant lastSeen = null;
 
     RepositoryPeer(Bytes nodeId) {
-      this(nodeId, Optional.empty());
+      this(nodeId, null);
     }
 
-    RepositoryPeer(Bytes nodeId, Endpoint endpoint) {
-      this(nodeId, Optional.of(endpoint));
-    }
-
-    RepositoryPeer(Bytes nodeId, Optional<Endpoint> optionalEndpoint) {
+    RepositoryPeer(Bytes nodeId, @Nullable Endpoint optionalEndpoint) {
       this.nodeId = nodeId;
       this.endpoint = optionalEndpoint;
       peerAdditionObservers.forEach(o -> o.accept(this));
@@ -245,7 +241,8 @@ public final class PeerRepository {
     }
 
     @Override
-    public Optional<Endpoint> endpoint() {
+    @Nullable
+    public Endpoint endpoint() {
       return endpoint;
     }
 
@@ -265,7 +262,8 @@ public final class PeerRepository {
     }
 
     @Override
-    public Optional<Instant> lastSeen() {
+    @Nullable
+    public Instant lastSeen() {
       return lastSeen;
     }
 
@@ -275,7 +273,7 @@ public final class PeerRepository {
         return;
       }
       this.active = true;
-      this.endpoint = Optional.of(endpoint);
+      this.endpoint = endpoint;
       peerActiveObservers.forEach(o -> o.accept(this));
     }
 
@@ -293,10 +291,10 @@ public final class PeerRepository {
     @Override
     public synchronized void updateEndpointIfInactive(Endpoint endpoint) {
       if (this.active) {
-        assert (this.endpoint.isPresent());
+        assert (this.endpoint != null);
         return;
       }
-      this.endpoint = Optional.of(endpoint);
+      this.endpoint = endpoint;
     }
 
     @Override
@@ -317,7 +315,20 @@ public final class PeerRepository {
 
     @Override
     public void updateLastSeen() {
-      lastSeen = Optional.of(currentTimeSupplier.get());
+      lastSeen = currentTimeSupplier.get();
+    }
+
+    @Override
+    public String toString() {
+      return "Peer{id="
+          + nodeId().toHexString()
+          + ", active="
+          + isActive()
+          + ", endpoint="
+          + endpoint()
+          + ", capabilities="
+          + capabilities()
+          + '}';
     }
   }
 }
