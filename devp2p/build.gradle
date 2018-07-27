@@ -5,7 +5,8 @@ dependencies {
   compile project(':rlp')
 
   compile 'org.logl:logl-logl:0.1.0'
-  compileOnly 'io.vertx:vertx-core'
+  compile 'io.vertx:vertx-core'
+  compile 'org.bouncycastle:bcprov-jdk15on'
 
   testCompile 'io.vertx:vertx-core'
   testCompile project(':junit')
