@@ -17,6 +17,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.nio.file.StandardOpenOption.READ;
 import static net.consensys.cava.crypto.Hash.keccak256;
+import static net.consensys.cava.crypto.SECP256K1.Parameters.CURVE;
 import static net.consensys.cava.io.file.Files.atomicReplace;
 
 import net.consensys.cava.bytes.Bytes;
@@ -44,6 +45,7 @@ import com.google.common.base.Objects;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
@@ -84,8 +86,8 @@ public final class SECP256K1 {
   private static final String PROVIDER = "BC";
 
   // Lazily initialize parameters by using java initialization on demand
-  static final class Parameters {
-    static final ECDomainParameters CURVE;
+  public static final class Parameters {
+    public static final ECDomainParameters CURVE;
     static final BigInteger CURVE_ORDER;
     static final BigInteger HALF_CURVE_ORDER;
     static final KeyPairGenerator KEY_PAIR_GENERATOR;
@@ -353,6 +355,28 @@ public final class SECP256K1 {
   }
 
   /**
+   * Calculates an ECDH key agreement between the private and the public key of another party.
+   *
+   * @param privKey the private key
+   * @param theirPubKey the public key
+   * @return shared secret.
+   */
+  public static Bytes32 calculateKeyAgreement(SecretKey privKey, PublicKey theirPubKey) {
+    checkArgument(privKey != null, "missing private key");
+    checkArgument(theirPubKey != null, "missing remote public key");
+
+    ECPrivateKeyParameters privKeyP =
+        new ECPrivateKeyParameters(privKey.bytes().toUnsignedBigInteger(), Parameters.CURVE);
+    ECPublicKeyParameters pubKeyP = new ECPublicKeyParameters(theirPubKey.asEcPoint(), Parameters.CURVE);
+
+    ECDHBasicAgreement agreement = new ECDHBasicAgreement();
+    agreement.init(privKeyP);
+    BigInteger agreed = agreement.calculateAgreement(pubKeyP);
+
+    return UInt256.valueOf(agreed).toBytes();
+  }
+
+  /**
    * A SECP256K1 private key.
    */
   public static class SecretKey implements Destroyable {
@@ -467,6 +491,10 @@ public final class SECP256K1 {
         Arrays.fill(bytes, (byte) 0);
         Arrays.fill(hexChars.array(), (char) 0);
       }
+    }
+
+    public ECPoint asEcPoint() {
+      return CURVE.getCurve().decodePoint(bytesArray());
     }
 
     @Override
@@ -647,6 +675,17 @@ public final class SECP256K1 {
      */
     public byte[] bytesArray() {
       return keyBytes.toArrayUnsafe();
+    }
+
+    /*
+     * Returns this public key as an {@link ECPoint} of Bouncy Castle, to facilitate cryptographic operations.
+     *
+     * @return This public key represented as an Elliptic Curve point.
+     */
+    public ECPoint asEcPoint() {
+      // 0x04 is the prefix for uncompressed keys.
+      Bytes val = Bytes.concatenate(Bytes.of(0x04), keyBytes);
+      return CURVE.getCurve().decodePoint(val.toArrayUnsafe());
     }
 
     @Override
