@@ -164,4 +164,10 @@ class IdentityTest {
     assertThrows(UnsupportedOperationException.class, () -> Identity.random().secp256k1PublicKey());
     assertThrows(UnsupportedOperationException.class, () -> Identity.randomSECP256K1().ed25519PublicKey());
   }
+
+  @Test
+  void fromCanonicalForm() {
+    Identity id = Identity.fromCanonicalForm("@FCX/tsDLpubCPKKfIrw4gc+SQkHcaD17s7GI6i/ziWY=.ed25519");
+    assertEquals(Identity.Curve.Ed25519, id.curve());
+  }
 }

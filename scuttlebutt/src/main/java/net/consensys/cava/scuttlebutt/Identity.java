@@ -15,6 +15,11 @@ package net.consensys.cava.scuttlebutt;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.crypto.SECP256K1;
 import net.consensys.cava.crypto.sodium.Signature;
+import net.consensys.cava.io.Base64;
+
+import java.util.List;
+
+import com.google.common.base.Splitter;
 
 /**
  * A Scuttlebutt identity, backed by a public key.
@@ -33,6 +38,21 @@ public interface Identity {
 
     Curve(String name) {
       this.name = name;
+    }
+
+    /**
+     * Provides the curve associated with the curve name, or null if none match the name.
+     *
+     * @param name the name of the curve
+     * @return the curve, or null if no curve is supported by that name
+     */
+    static Curve fromName(String name) {
+      if (SECP256K1.name.equals(name)) {
+        return SECP256K1;
+      } else if (Ed25519.name.equals(name)) {
+        return Ed25519;
+      }
+      return null;
     }
   }
 
@@ -122,6 +142,34 @@ public interface Identity {
    */
   static Identity fromPublicKey(Signature.PublicKey publicKey) {
     return new Ed25519PublicKeyIdentity(publicKey);
+  }
+
+  /**
+   * Creates a new identity from its canonical form.
+   *
+   * @param id the identity in a canonical form
+   * @return the identity, decoded
+   */
+  static Identity fromCanonicalForm(String id) {
+    if (!id.startsWith("@")) {
+      throw new IllegalArgumentException("The canonical form should start with @");
+    }
+    List<String> segments = Splitter.on('.').splitToList(id.substring(1));
+    if (segments.size() != 2) {
+      throw new IllegalArgumentException("The canonical form should be of the form @base64-encoded public key.curve");
+    }
+    Curve curve = Curve.fromName(segments.get(1));
+    if (curve == null) {
+      throw new IllegalArgumentException("Unsupported curve " + segments.get(1));
+    }
+    Bytes pubKey = Base64.decode(segments.get(0));
+    if (curve == Curve.SECP256K1) {
+      return fromPublicKey(SECP256K1.PublicKey.fromBytes(pubKey));
+    } else if (curve == Curve.Ed25519) {
+      return fromPublicKey(Signature.PublicKey.fromBytes(pubKey));
+    } else {
+      throw new UnsupportedOperationException("Unsupported identity " + curve);
+    }
   }
 
   /**
