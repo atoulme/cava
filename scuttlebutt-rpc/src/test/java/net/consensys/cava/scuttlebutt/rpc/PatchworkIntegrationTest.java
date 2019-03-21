@@ -94,7 +94,7 @@ class PatchworkIntegrationTest {
     String networkKeyBase64 = "1KHLiKZvAvjbY1ziZEHMXawbCEIM6qwjCDm3VYRan/s=";
     Signature.KeyPair keyPair = Signature.KeyPair.random();
 
-    String serverPublicKey = ""; // TODO use your own identity public key here.
+    String serverPublicKey = "c8o0hCDN8Cya3PGeCYv3AUMxu9oacNMaRLKKIkpX21M="; // TODO use your own identity public key here.
     Signature.PublicKey publicKey = Signature.PublicKey.fromBytes(Base64.decode(serverPublicKey));
 
     Bytes32 networkKeyBytes32 = Bytes32.wrap(Base64.decode(networkKeyBase64));
