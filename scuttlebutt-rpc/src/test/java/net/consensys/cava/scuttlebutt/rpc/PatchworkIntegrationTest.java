@@ -87,13 +87,14 @@ class PatchworkIntegrationTest {
   void runWithPatchWork(@VertxInstance Vertx vertx) throws Exception {
     String host = "localhost";
     int port = 8008;
-    LoggerProvider loggerProvider = SimpleLogger.withLogLevel(Level.DEBUG).toPrintWriter(new PrintWriter(System.out));
+    LoggerProvider loggerProvider = SimpleLogger.withLogLevel(Level.DEBUG).toPrintWriter(new PrintWriter(System.out, true));
+
     LoglLogDelegateFactory.setProvider(loggerProvider);
 
     String networkKeyBase64 = "1KHLiKZvAvjbY1ziZEHMXawbCEIM6qwjCDm3VYRan/s=";
     Signature.KeyPair keyPair = Signature.KeyPair.random();
 
-    String serverPublicKey = ""; // TODO use your own identity public key here.
+    String serverPublicKey = "c8o0hCDN8Cya3PGeCYv3AUMxu9oacNMaRLKKIkpX21M="; // TODO use your own identity public key here.
     Signature.PublicKey publicKey = Signature.PublicKey.fromBytes(Base64.decode(serverPublicKey));
 
     Bytes32 networkKeyBytes32 = Bytes32.wrap(Base64.decode(networkKeyBase64));
@@ -113,7 +114,7 @@ class PatchworkIntegrationTest {
     onConnect.join();
     assertTrue(onConnect.isDone());
     assertFalse(onConnect.isCompletedExceptionally());
-    Thread.sleep(1000);
+
     assertNotNull(clientHandler);
     // An RPC command that just tells us our public key (like ssb-server whoami on the command line.)
     String rpcRequestBody = "{\n" + "  \"name\": [\"whoami\"],\n" + "  \"type\": \"sync\" " + "}";
