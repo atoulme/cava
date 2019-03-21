@@ -87,7 +87,8 @@ class PatchworkIntegrationTest {
   void runWithPatchWork(@VertxInstance Vertx vertx) throws Exception {
     String host = "localhost";
     int port = 8008;
-    LoggerProvider loggerProvider = SimpleLogger.withLogLevel(Level.DEBUG).toPrintWriter(new PrintWriter(System.out));
+    LoggerProvider loggerProvider = SimpleLogger.withLogLevel(Level.DEBUG).toPrintWriter(new PrintWriter(System.out, true));
+
     LoglLogDelegateFactory.setProvider(loggerProvider);
 
     String networkKeyBase64 = "1KHLiKZvAvjbY1ziZEHMXawbCEIM6qwjCDm3VYRan/s=";
@@ -113,7 +114,7 @@ class PatchworkIntegrationTest {
     onConnect.join();
     assertTrue(onConnect.isDone());
     assertFalse(onConnect.isCompletedExceptionally());
-    Thread.sleep(1000);
+
     assertNotNull(clientHandler);
     // An RPC command that just tells us our public key (like ssb-server whoami on the command line.)
     String rpcRequestBody = "{\n" + "  \"name\": [\"whoami\"],\n" + "  \"type\": \"sync\" " + "}";

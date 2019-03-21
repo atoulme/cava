@@ -44,15 +44,17 @@ public final class SecureScuttlebuttVertxClient {
     private final NetSocket socket;
     private final SecureScuttlebuttHandshakeClient handshakeClient;
     private final ClientHandlerFactory handlerFactory;
+    private final CompletableAsyncCompletion completion;
     private int handshakeCounter;
     private SecureScuttlebuttStreamClient client;
     private ClientHandler handler;
 
     NetSocketClientHandler(
-        Logger logger,
-        NetSocket socket,
-        Signature.PublicKey remotePublicKey,
-        ClientHandlerFactory handlerFactory) {
+            Logger logger,
+            NetSocket socket,
+            Signature.PublicKey remotePublicKey,
+            ClientHandlerFactory handlerFactory,
+            CompletableAsyncCompletion completion) {
       this.logger = logger;
       this.socket = socket;
       this.handshakeClient = SecureScuttlebuttHandshakeClient.create(keyPair, networkIdentifier, remotePublicKey);
@@ -65,6 +67,8 @@ public final class SecureScuttlebuttVertxClient {
       socket.exceptionHandler(e -> logger.error(e.getMessage(), e));
       socket.handler(this::handle);
       socket.write(Buffer.buffer(handshakeClient.createHello().toArrayUnsafe()));
+
+      this.completion = completion;
     }
 
     void handle(Buffer buffer) {
@@ -82,6 +86,9 @@ public final class SecureScuttlebuttVertxClient {
                 socket.close();
               });
           handshakeCounter++;
+
+          completion.complete();
+
         } else {
           Bytes message = client.readFromServer(Bytes.wrapBuffer(buffer));
           if (SecureScuttlebuttStreamServer.isGoodbye(message)) {
@@ -92,7 +99,10 @@ public final class SecureScuttlebuttVertxClient {
           }
         }
       } catch (HandshakeException | StreamException e) {
+        completion.completeExceptionally(e);
+
         logger.debug(e.getMessage(), e);
+
         socket.close();
       } catch (Throwable t) {
         logger.error(t.getMessage(), t);
@@ -150,8 +160,8 @@ public final class SecureScuttlebuttVertxClient {
             loggerProvider.getLogger(host + ":" + port),
             socket,
             remotePublicKey,
-            handlerFactory);
-        completion.complete();
+            handlerFactory,
+            completion);
       }
     });
 
