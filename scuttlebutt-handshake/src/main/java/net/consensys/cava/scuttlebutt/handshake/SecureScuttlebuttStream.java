@@ -94,6 +94,13 @@ final class SecureScuttlebuttStream implements SecureScuttlebuttStreamClient, Se
       decryptedMessages.add(decryptedMessage);
       index += decryptedMessage.size() + 34;
     }
+
+    if (isClientToServer) {
+      clientToServerBuffer = Bytes.EMPTY;
+    } else {
+      serverToClientBuffer = Bytes.EMPTY;
+    }
+
     return Bytes.concatenate(decryptedMessages.toArray(new Bytes[0]));
   }
 
